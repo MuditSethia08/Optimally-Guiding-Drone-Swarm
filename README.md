@@ -1,2 +1,2 @@
 # Optimally Guiding Drone Swarm
- Projct form ME 312 IIT Bombay
+ Project form ME 312 IIT Bombay
