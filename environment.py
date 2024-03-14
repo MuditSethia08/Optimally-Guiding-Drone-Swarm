@@ -1,57 +1,97 @@
 # environment.py
 
 import numpy as np
+import pygame
 from agent import Drone
 from defense import DefenseSystem
-from utils import initialize_defenses, initialize_drones
+
+random_seed = 0
 
 class CombatEnvironment:
-    def __init__(self, grid_size=(10, 10), num_drones=5, num_defenses=10):
+    def __init__(self, grid_size=(10, 10), num_drones=2, num_defenses=3, cell_size=60):
+        """
+        Initialize the CombatEnvironment class.
+
+        Args:
+        - grid_size (tuple): Size of the grid.
+        - num_drones (int): Number of drones.
+        - num_defenses (int): Number of defense systems.
+        - cell_size (int): Size of each cell in pixels.
+        """
         self.grid_size = grid_size
-        self.grid = np.zeros(grid_size, dtype=object)
-        self.drones = initialize_drones(num_drones, self.grid_size)
-        self.defenses = initialize_defenses(num_defenses, self.grid_size)
+        self.cell_size = cell_size  # Size of each cell in pixels
+        self.screen_size = (grid_size[0] * cell_size, grid_size[1] * cell_size)
+        self.grid = np.zeros(grid_size, dtype=object)  # Empty grid
+        self.drones = [Drone((i, 0)) for i in range(num_drones)]
+        self.defenses = [DefenseSystem((np.random.randint(0, grid_size[0]), np.random.randint(0, grid_size[1]))) for _ in range(num_defenses)]
         self.place_entities()
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.screen_size)
+        pygame.display.set_caption('Drone Swarm Optimization Simulation')
 
     def place_entities(self):
-        for drone in self.drones:
-            self.grid[drone.position] = drone
-        for defense in self.defenses:
-            self.grid[defense.position] = defense
+        """
+        Place drones and defense systems on the grid.
+        """
+        for entity in self.drones + self.defenses:
+            self.grid[entity.position] = entity
+
+    def step(self, actions):
+        """
+        Move drones based on the provided actions.
+
+        Args:
+        - actions (list): List of actions for each drone.
+        """
+        for action, drone in zip(actions, self.drones):
+            if action == 'move_right' and drone.position[1] < self.grid_size[1] - 1:
+                self.grid[drone.position] = None  # Clear current position
+                drone.position = (drone.position[0], drone.position[1] + 1)
+                self.grid[drone.position] = drone  # Move drone to new position
+
+            if action == 'move_left' and drone.position[1] > 0:
+                self.grid[drone.position] = None
+                drone.position = (drone.position[0], drone.position[1] - 1)
+                self.grid[drone.position] = drone
+
+            if action == 'move_up' and drone.position[0] > 0:
+                self.grid[drone.position] = None
+                drone.position = (drone.position[0] - 1, drone.position[1])
+                self.grid[drone.position] = drone
+
+            if action == 'move_down' and drone.position[0] < self.grid_size[0] - 1:
+                self.grid[drone.position] = None
+                drone.position = (drone.position[0] + 1, drone.position[1])
+                self.grid[drone.position] = drone
+
+            if action == 'shoot':
+                for defense in self.defenses:
+                    if defense.position == drone.position:
+                        defense.health -= 1
+                        if defense.health == 0:
+                            self.grid[defense.position] = None  # Remove defense system
+                            self.defenses.remove(defense)
+
+            
 
     def render(self):
-        # Optional: Implement a method to visually render the grid and the entities on it
-        pass
+        """
+        Render the environment.
+        """
+        self.screen.fill((0, 0, 0))  # Fill the screen with black
+        for i in range(self.grid_size[0]):
+            for j in range(self.grid_size[1]):
+                rect = pygame.Rect(j * self.cell_size, i * self.cell_size, self.cell_size, self.cell_size)
+                pygame.draw.rect(self.screen, (255, 255, 255), rect, 1)  # Draw grid lines
+                if isinstance(self.grid[i, j], Drone):
+                    pygame.draw.circle(self.screen, (0, 255, 0), rect.center, self.cell_size // 4)  # Draw drones
+                elif isinstance(self.grid[i, j], DefenseSystem):
+                    pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(-20, -20))  # Draw defenses
+        pygame.display.flip()  # Update the display
 
     def reset(self):
-        # Reset the environment to its initial state
+        """
+        Reset the environment.
+        """
         self.grid = np.zeros(self.grid_size, dtype=object)
-        self.drones = initialize_drones(len(self.drones), self.grid_size)
-        self.defenses = initialize_defenses(len(self.defenses), self.grid_size)
         self.place_entities()
-
-    def step(self, drone_actions):
-        total_reward = 0
-        for drone, action in zip(self.drones, drone_actions):
-            initial_reward = total_reward
-
-            # Assuming action is a tuple like ('move', 'up') or ('attack', (x, y))
-            if action[0] == 'move':
-                drone.move(action[1], self.grid_size)
-            elif action[0] == 'attack':
-                success = drone.attack(action[1], self)
-                if success:
-                    total_reward += 10  # Reward for successful attack
-
-            # Check if the drone was attacked this turn
-            if drone.health < 100:  # Assuming drones start with 100 health
-                total_reward -= 5  # Penalty for being hit
-
-        # Reward for surviving drones
-        total_reward += len([d for d in self.drones if d.health > 0]) * 1
-
-        # Check if all defenses are destroyed
-        if not any(isinstance(self.grid[position], DefenseSystem) for position in np.ndindex(self.grid.shape)):
-            total_reward += 100  # Bonus for completing the objective
-
-        return total_reward
