@@ -91,8 +91,8 @@ if __name__=="__main__":
                     drone_pos2 = (x_coord2, y_coord2)#change made
 
                     ##################
-                    ### dead-alive ###
-
+                    ### dead-attac ###
+                    # d1 is dead d2 attack
                     for aa_statuses in [(0,1), (1,0), (1,1)]:
                         prob_drone_gets_hit1 = aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos1, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
                         prob_drone_gets_hit2 = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
@@ -170,7 +170,7 @@ if __name__=="__main__":
                         ))
                     
                     
-                    # Attack transitions
+                    # d1 attack d1 is dead
                     for aa_statuses in [(0,1), (1,0), (1,1)]:
                         prob_drone_gets_hit1 = aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos1, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
                         prob_drone_gets_hit2 = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
@@ -254,68 +254,80 @@ if __name__=="__main__":
                             continue
                         for aa_statuses in [(0,1), (1,0), (1,1)]:
                             #change movement suicide rewards
-                            prob_drone_gets_hit1 = aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos1, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
-                            prob_drone_gets_hit2 = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
-                            aa1_killed_prob = drone_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[0]+drone_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[0]-drone_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[0]*drone_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[0]
-                            aa2_killed_prob = drone_hit_prob(drone_pos1, aa_positions[1])*aa_statuses[1]+drone_hit_prob(drone_pos2, aa_positions[1])*aa_statuses[1]-drone_hit_prob(drone_pos1, aa_positions[1])*aa_statuses[1]*drone_hit_prob(drone_pos2, aa_positions[1])*aa_statuses[1]
-                        
-                            # Invading airspace of aa1
+                            d1_dead = aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos1, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
+                            d2_dead = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
+                            aa1_d1 = drone_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[0]
+                            aa1_d2 = drone_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[0]
+                            aa2_d1 = drone_hit_prob(drone_pos1, aa_positions[1])*aa_statuses[1]
+                            aa2_d2 = drone_hit_prob(drone_pos2, aa_positions[1])*aa_statuses[1]
+                            
+                            # d1 is going over aa1 d2 is shooting aa2
                             if np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1 and aa_statuses[1]==1:
                                 # aa2 hit
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward, (1-prob_drone_gets_hit2)*aa2_killed_prob*(1-prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward, (1-d1_dead)*aa2_d2*(1-d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward, (prob_drone_gets_hit2)*aa2_killed_prob*(1-prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward, (d2_dead)*aa2_d2*(1-d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward, (1-prob_drone_gets_hit2)*aa2_killed_prob*(prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward, (1-d2_dead)*aa2_d2*(d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward, (prob_drone_gets_hit2)*aa2_killed_prob*(prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward, (d2_dead)*aa2_d2*(d1_dead)
                                 ))
                                 # aa2 not hit
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(get_state_code(next_pos, drone_pos2, 0, aa_statuses[1])), 2*aa_kill_reward, (1-prob_drone_gets_hit2)*(1-aa2_killed_prob)*(1-prob_drone_gets_hit1)
+                                    states.index(get_state_code(next_pos, drone_pos2, 0, aa_statuses[1])), 2*aa_kill_reward, (1-d2_dead)*(1-aa2_d2)*(1-d2_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(get_state_code(next_pos, (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (prob_drone_gets_hit2)*(1-aa2_killed_prob)*(1-prob_drone_gets_hit1)
+                                    states.index(get_state_code(next_pos, (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (d2_dead)*(1-aa2_d2)*(1-d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(get_state_code((-100,-100), drone_pos2, 0, aa_statuses[1])), 2*aa_kill_reward, (1-prob_drone_gets_hit2)*(1-aa2_killed_prob)*(prob_drone_gets_hit1)
+                                    states.index(get_state_code((-100,-100), drone_pos2, 0, aa_statuses[1])), 2*aa_kill_reward, (1-d2_dead)*(1-aa2_d2)*(d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(get_state_code((-100,-100), (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (prob_drone_gets_hit2)*(1-aa2_killed_prob)*(prob_drone_gets_hit1)
+                                    states.index(get_state_code((-100,-100), (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (d2_dead)*(1-aa2_d2)*(d1_dead)
                                 ))
                                
-                            # Invading airspace of aa2
-                            # !!!!!!!!!!!!!!!!!!!!!
-                                #!!!!!!!!!!!!!!!!!!!!!imp aa_statusesp[0]==0 case left to be taken
-                            elif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[1]==1 and aa_statuses[0]==1:
+                            # d1 is going over aa1 d2 is doing nothing
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1 and aa_statuses[1]==0:
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,0),
+                                    states.index(0), aa_kill_reward, 1
+                                ))
+                            # d1 is going over aa2 d2 is doing nothing
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[0]==0 and aa_statuses[1]==1:
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,0),
+                                    states.index(0), aa_kill_reward, 1
+                                ))
+                            # d1 is going over aa2 d2 is shooting aa1
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[1]==1 and aa_statuses[0]==1:
                                 # aa1 hit
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward, (1-prob_drone_gets_hit2)*aa1_killed_prob*(1-prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward, (1-d2_dead)*aa2_d2*(1-d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (prob_drone_gets_hit2)*aa1_killed_prob*(1-prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (d2_dead)*aa2_d2*(1-d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (1-prob_drone_gets_hit2)*aa1_killed_prob*(prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (1-d2_dead)*aa2_d2*(d1_dead)
                                 ))
                                 transitions.append((
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
-                                    states.index(0), 2*aa_kill_reward+2*drone_death_reward, (prob_drone_gets_hit2)*aa1_killed_prob*(prob_drone_gets_hit1)
+                                    states.index(0), 2*aa_kill_reward+2*drone_death_reward, (d2_dead)*aa2_d2*(d1_dead)
                                 ))
                                 # aa1 not hit
                                 transitions.append((
@@ -334,77 +346,260 @@ if __name__=="__main__":
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
                                     states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], 0)), 2*drone_death_reward+aa_kill_reward, (prob_drone_gets_hit2)*(1-aa1_killed_prob)*(prob_drone_gets_hit1)
                                 ))
-                            # No reward for moving freely
+                            # d1 is going over no one and d2 shooting
                             # change -0.5 reward for wasting everyones time
                             else:
+                                #shooting aa1
                                 transitions.append((
-                                    states.index(get_state_code(drone_pos1, (-100,-100), aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5, 1-prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], aa_statuses[1])), -0.5, (1-d2_dead)*(1-aa1_d2)*(1-d1_dead)
                                 ))
                                 transitions.append((
-                                    states.index(get_state_code(drone_pos1, (-100,-100), aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), drone_death_reward, prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(1-aa1_d2)*(1-d1_dead)
                                 ))
-
-                    #d1 is dead d2 moves
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code((-100,-100), drone_pos2, aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, (1-d2_dead)*(1-aa1_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+2*drone_death_reward, d2_dead*(aa1_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code(next_pos, (-100,-100), 0, a_statuses[1])), -0.5+aa_kill_reward+drone_death_reward, (d2_dead)*(aa1_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code((-100,-100), (-100,-100), 0, aa_statuses[1])), -0.5+aa_kill_reward+2*drone_death_reward, (d2_dead)*(aa1_d2)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code(next_pos, drone_pos2, 0, a_statuses[1])), -0.5+aa_kill_reward, (1-d2_dead)*(aa1_d2)(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code((-100,-100), drone_pos2, 0, aa_statuses[1])), -0.5+aa_kill_reward+drone_death_reward, (1-d2_dead)*(aa1_d2)*(d1_dead)
+                                ))
+                                #shooting aa2
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(1-aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+2*drone_death_reward, d2_dead*(1-aa2_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(aa2_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], 0)), -0.5+aa_kill_reward+drone_death_reward, (d2_dead)*(aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], 0)), -0.5+aa_kill_reward+2*drone_death_reward, (d2_dead)*(aa2_d2)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], 0)), -0.5+aa_kill_reward, (1-d2_dead)*(aa2_d2)(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code((-100,-100), drone_pos2, aa_statuses[0], 0)), -0.5+aa_kill_reward+drone_death_reward, (1-d2_dead)*(aa2_d2)*(d1_dead)
+                                ))
+                    # d1 attack d2 move
                     for move_action in range(3,7,1):
                         next_pos = np.array(drone_pos2) + \
                             np.array(movement_delta[move_action])
                         # Negative reward for going out of bounds
                         if out_of_arena(next_pos):
                             transitions.append((
-                                states.index(get_state_code((-100,-100), drone_pos2, 1, 1)),
-                                move_action, states.index(-1), drone_death_reward, 1
+                                states.index(get_state_code(drone_pos1, drone_pos2, 1, 1)),
+                                move_action, states.index(drone_pos1, (-100,-100), 1, 1), drone_death_reward, 1
                             ))
                             transitions.append((
-                                states.index(get_state_code((-100,-100), drone_pos2, 0, 1)),
-                                move_action, states.index(-1), drone_death_reward, 1
+                                states.index(get_state_code(drone_pos1, drone_pos2, 0, 1)),
+                                move_action, states.index(drone_pos1, (-100,-100), 0, 1), drone_death_reward, 1
                             ))
                             transitions.append((
-                                states.index(get_state_code((-100,-100),drone_pos2, 1, 0)),
-                                move_action, states.index(-1), drone_death_reward, 1
+                                states.index(get_state_code(drone_pos1, drone_pos2, 1, 0)),
+                                move_action, states.index(drone_pos1, (-100,-100), 1, 0), drone_death_reward, 1
                             ))
                             continue
                         for aa_statuses in [(0,1), (1,0), (1,1)]:
                             #change movement suicide rewards
-                            prob_drone_gets_hit = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])
-                            # Invading airspace of aa1
-                            if np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1:
-                                # Reward for killing the aa
+                            d1_dead = aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos1, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
+                            d2_dead = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos, aa_positions[1])
+                            aa1_d1 = drone_hit_prob(drone_pos1, aa_positions[0])*aa_statuses[0]
+                            aa1_d2 = drone_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[0]
+                            aa2_d1 = drone_hit_prob(drone_pos1, aa_positions[1])*aa_statuses[1]
+                            aa2_d2 = drone_hit_prob(drone_pos2, aa_positions[1])*aa_statuses[1]
+                            
+                            # d2 is going over aa1 d1 is shooting aa2
+                            if np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1 and aa_statuses[1]==1:
+                                # aa2 hit
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code((-100,-100),next_pos, 0, aa_statuses[1])), aa_kill_reward, 1-prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(0), 2*aa_kill_reward, (1-d1_dead)*aa2_d2*(1-d1_dead)
                                 ))
-                                # Reward for killing the aa and negative reward for dying
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(0), aa_kill_reward + drone_death_reward, prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (d2_dead)*aa2_d2*(1-d1_dead)
                                 ))
-                            # Invading airspace of aa2
-                            elif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[1]==1:
-                                # Reward for killing the aa
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code((-100,-100),next_pos, aa_statuses[0], 0)), aa_kill_reward, 1-prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (1-d2_dead)*aa2_d2*(d1_dead)
                                 ))
-                                # Reward for killing the aa and negative reward for dying
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(0), aa_kill_reward + drone_death_reward, prob_drone_gets_hit1
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(0), 2*aa_kill_reward+2*drone_death_reward, (d2_dead)*aa2_d2*(d1_dead)
                                 ))
-                            # No reward for moving freely
+                                # aa2 not hit
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(drone_pos1, next_pos, 0, aa_statuses[1])), 2*aa_kill_reward, (1-d2_dead)*(1-aa2_d1)*(1-d2_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code((-100,-100), next_pos, 0, aa_statuses[1])), 2*aa_kill_reward, (d1_dead)*(1-aa2_d1)*(1-d2_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(drone_pos1, (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (1-d1_dead)*(1-aa2_d1)*(d2_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,2),
+                                    states.index(get_state_code((-100,-100), (-100,-100), 0, aa_statuses[1])), 2*aa_kill_reward, (d2_dead)*(1-aa2_d1)*(d1_dead)
+                                ))
+                               
+                            # d1 is going over aa1 d2 is doing nothing
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1 and aa_statuses[1]==0:
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(0,move_action),
+                                    states.index(0), aa_kill_reward, 1
+                                ))
+                            # d2 is going over aa2 d1 is doing nothing
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[0]==0 and aa_statuses[1]==1:
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(0,move_action),
+                                    states.index(0), aa_kill_reward, 1
+                                ))
+                            # d2 is going over aa2 d1 is shooting aa1
+                            elseif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[1]==1 and aa_statuses[0]==1:
+                                # aa1 hit
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(0), 2*aa_kill_reward, (1-d2_dead)*aa1_d1*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (d2_dead)*aa1_d1*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(0), 2*aa_kill_reward+drone_death_reward, (1-d2_dead)*aa1_d1*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(0), 2*aa_kill_reward+2*drone_death_reward, (d2_dead)*aa1_d1*(d1_dead)
+                                ))
+                                # aa1 not hit
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], 0)), aa_kill_reward, (1-d2_dead)*(1-aa1_d1)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], 0)), aa_kill_reward+drone_death_reward, (d2_dead)*(1-aa1_d1)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code((-100,-100), drone_pos2, aa_statuses[1], 0)), drone_death_reward+aa_kill_reward, (1-d2_dead)*(1-aa1_d1)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], 0)), 2*drone_death_reward+aa_kill_reward, (d2_dead)*(1-aa1_d1)*(d1_dead)
+                                ))
+                            # d2 is going over no one and d1 shooting
                             # change -0.5 reward for wasting everyones time
                             else:
+                                #shooting aa1
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100), drone_pos2,aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code((-100,-100),next_pos, aa_statuses[0], aa_statuses[1])), -0.5, 1-prob_drone_gets_hit
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(drone_pos1, next_pos, aa_statuses[0], aa_statuses[1])), -0.5, (1-d2_dead)*(1-aa1_d2)*(1-d1_dead)
                                 ))
                                 transitions.append((
-                                    states.index(get_state_code((-100,-100),drone_pos1, aa_statuses[0], aa_statuses[1])), move_action,
-                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), drone_death_reward, prob_drone_gets_hit
-                                ))  
-                ################
-                ## move-dead ###
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code((-100,-100), next_pos, aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, (1-d2_dead)*(aa1_d2)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(drone_pos1, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(1-aa1_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+2*drone_death_reward, d2_dead*(1-aa1_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(next_pos, (-100,-100), 0, a_statuses[1])), -0.5+aa_kill_reward+drone_death_reward, (d2_dead)*(aa1_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), 0, aa_statuses[1])), -0.5+aa_kill_reward+2*drone_death_reward, (d2_dead)*(aa1_d2)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(1,move_action),
+                                    states.index(get_state_code(next_pos, drone_pos2, 0, a_statuses[1])), -0.5+aa_kill_reward, (1-d2_dead)*(aa1_d2)(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(move_action,1),
+                                    states.index(get_state_code((-100,-100), drone_pos2, 0, aa_statuses[1])), -0.5+aa_kill_reward+drone_death_reward, (1-d2_dead)*(aa1_d2)*(d1_dead)
+                                ))
+                                #shooting aa2
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(1-aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+2*drone_death_reward, d2_dead*(1-aa2_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), -0.5+drone_death_reward, d2_dead*(aa2_d2)*d1_dead
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(next_pos, (-100,-100), aa_statuses[0], 0)), -0.5+aa_kill_reward+drone_death_reward, (d2_dead)*(aa2_d2)*(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], 0)), -0.5+aa_kill_reward+2*drone_death_reward, (d2_dead)*(aa2_d2)*(d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], 0)), -0.5+aa_kill_reward, (1-d2_dead)*(aa2_d2)(1-d1_dead)
+                                ))
+                                transitions.append((
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action(2,move_action),
+                                    states.index(get_state_code((-100,-100), drone_pos2, aa_statuses[0], 0)), -0.5+aa_kill_reward+drone_death_reward, (1-d2_dead)*(aa2_d2)*(d1_dead)
+                                ))
+                    
+                    ################
+                    ## move-dead ###
                     # d1 moves d2 is dead
                     for move_action in range(3,7,1):
                         next_pos = np.array(drone_pos1) + \
@@ -463,7 +658,7 @@ if __name__=="__main__":
                                     states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), drone_death_reward, prob_drone_gets_hit
                                 ))
 
-                    #d1 is dead d2 moves
+                    # d1 is dead d2 moves
                     for move_action in range(3,7,1):
                         next_pos = np.array(drone_pos2) + \
                             np.array(movement_delta[move_action])
@@ -524,4 +719,62 @@ if __name__=="__main__":
     transitions = [item for item in transitions if item[4] != 0]
     print_as_mdp(num_S, num_A, transitions)
 
+#trash
+# #d1 is dead d2 moves
+# for move_action in range(3,7,1):
+#     next_pos = np.array(drone_pos2) + \
+#         np.array(movement_delta[move_action])
+#     # Negative reward for going out of bounds
+#     if out_of_arena(next_pos):
+#         transitions.append((
+#             states.index(get_state_code((-100,-100), drone_pos2, 1, 1)),
+#             move_action, states.index(-1), drone_death_reward, 1
+#         ))
+#         transitions.append((
+#             states.index(get_state_code((-100,-100), drone_pos2, 0, 1)),
+#             move_action, states.index(-1), drone_death_reward, 1
+#         ))
+#         transitions.append((
+#             states.index(get_state_code((-100,-100),drone_pos2, 1, 0)),
+#             move_action, states.index(-1), drone_death_reward, 1
+#         ))
+#         continue
+#     for aa_statuses in [(0,1), (1,0), (1,1)]:
+#         #change movement suicide rewards
+#         prob_drone_gets_hit = aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])+aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])-aa_statuses[0]*aa_hit_prob(drone_pos2, aa_positions[0])*aa_statuses[1]*aa_hit_prob(drone_pos2, aa_positions[1])
+#         # Invading airspace of aa1
+#         if np.linalg.norm(np.array(next_pos) - np.array(aa_positions[0])) == 0 and aa_statuses[0]==1:
+#             # Reward for killing the aa
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(get_state_code((-100,-100),next_pos, 0, aa_statuses[1])), aa_kill_reward, 1-prob_drone_gets_hit
+#             ))
+#             # Reward for killing the aa and negative reward for dying
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(0), aa_kill_reward + drone_death_reward, prob_drone_gets_hit
+#             ))
+#         # Invading airspace of aa2
+#         elif np.linalg.norm(np.array(next_pos) - np.array(aa_positions[1])) == 0 and aa_statuses[1]==1:
+#             # Reward for killing the aa
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(get_state_code((-100,-100),next_pos, aa_statuses[0], 0)), aa_kill_reward, 1-prob_drone_gets_hit
+#             ))
+#             # Reward for killing the aa and negative reward for dying
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100),drone_pos2, aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(0), aa_kill_reward + drone_death_reward, prob_drone_gets_hit1
+#             ))
+#         # No reward for moving freely
+#         # change -0.5 reward for wasting everyones time
+#         else:
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100), drone_pos2,aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(get_state_code((-100,-100),next_pos, aa_statuses[0], aa_statuses[1])), -0.5, 1-prob_drone_gets_hit
+#             ))
+#             transitions.append((
+#                 states.index(get_state_code((-100,-100),drone_pos1, aa_statuses[0], aa_statuses[1])), move_action,
+#                 states.index(get_state_code((-100,-100), (-100,-100), aa_statuses[0], aa_statuses[1])), drone_death_reward, prob_drone_gets_hit
+#             ))  
 
