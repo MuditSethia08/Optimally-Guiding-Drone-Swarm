@@ -13,8 +13,8 @@ def main():
                 running = False
 
         env.render()
-        actions = ['move_right', 'move_down']  # Simulate drone actions
-        env.step(actions)
+        position = input("Enter new positions: ")
+        env.step(position, 2, 2)
         clock.tick(2)  # Control simulation speed, 2 steps per second
 
         # Add additional game logic (e.g., user input) as needed

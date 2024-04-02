@@ -8,7 +8,7 @@ from defense import DefenseSystem
 random_seed = 0
 
 class CombatEnvironment:
-    def __init__(self, grid_size=(10, 10), num_drones=2, num_defenses=3, cell_size=60):
+    def __init__(self, grid_size=(10, 10), num_drones=2, num_defenses=2, cell_size=60):
         """
         Initialize the CombatEnvironment class.
 
@@ -36,43 +36,19 @@ class CombatEnvironment:
         for entity in self.drones + self.defenses:
             self.grid[entity.position] = entity
 
-    def step(self, actions):
+    def step(self, positions, num_drones, num_defenses):
         """
-        Move drones based on the provided actions.
+        Set drones and defences according to the newly provided coordinates.
 
         Args:
-        - actions (list): List of actions for each drone.
+        - positions (string): "a1x, a1y, a2x, a2y, d1x, d1y, d2x, d2y".
         """
-        for action, drone in zip(actions, self.drones):
-            if action == 'move_right' and drone.position[1] < self.grid_size[1] - 1:
-                self.grid[drone.position] = None  # Clear current position
-                drone.position = (drone.position[0], drone.position[1] + 1)
-                self.grid[drone.position] = drone  # Move drone to new position
-
-            if action == 'move_left' and drone.position[1] > 0:
-                self.grid[drone.position] = None
-                drone.position = (drone.position[0], drone.position[1] - 1)
-                self.grid[drone.position] = drone
-
-            if action == 'move_up' and drone.position[0] > 0:
-                self.grid[drone.position] = None
-                drone.position = (drone.position[0] - 1, drone.position[1])
-                self.grid[drone.position] = drone
-
-            if action == 'move_down' and drone.position[0] < self.grid_size[0] - 1:
-                self.grid[drone.position] = None
-                drone.position = (drone.position[0] + 1, drone.position[1])
-                self.grid[drone.position] = drone
-
-            if action == 'shoot':
-                for defense in self.defenses:
-                    if defense.position == drone.position:
-                        defense.health -= 1
-                        if defense.health == 0:
-                            self.grid[defense.position] = None  # Remove defense system
-                            self.defenses.remove(defense)
-
-            
+        positions = positions.split(',')
+        for i in range(num_drones):
+            self.drones[i].position = (int(positions[i * 2]), int(positions[i * 2 + 1]))
+        for i in range(num_defenses):
+            self.defenses[i].position = (int(positions[num_drones * 2 + i * 2]), int(positions[num_drones * 2 + i * 2 + 1]))
+        self.reset()
 
     def render(self):
         """
