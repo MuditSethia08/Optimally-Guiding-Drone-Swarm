@@ -8,7 +8,7 @@ from defense import DefenseSystem
 random_seed = 0
 
 class CombatEnvironment:
-    def __init__(self, grid_size=(10, 10), num_drones=2, num_defenses=2, cell_size=60):
+    def __init__(self, grid_size=(4, 4), num_drones=2, num_defenses=2, cell_size=60):
         """
         Initialize the CombatEnvironment class.
 
@@ -43,6 +43,7 @@ class CombatEnvironment:
         Args:
         - positions (string): "a1x, a1y, a2x, a2y, d1x, d1y, d2x, d2y".
         """
+        self.positions = positions
         positions = positions.split(',')
         for i in range(num_drones):
             self.drones[i].position = (int(positions[i * 2]), int(positions[i * 2 + 1]))

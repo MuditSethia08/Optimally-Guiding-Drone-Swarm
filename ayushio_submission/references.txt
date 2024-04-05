@@ -1,5 +1,0 @@
-1. Accepting and reading arguments from the command line
-    https://www.geeksforgeeks.org/command-line-arguments-in-python/
-2. Reading contents of a .txt file using open() and readline()
-    https://pynative.com/python-read-file/
-
