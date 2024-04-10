@@ -25,7 +25,7 @@ def main():
         if(current_state == -1):
             print('Game Over')
             break
-        action = parse_strat('strategy.txt',current_state)
+        action = parse_strat('TS_strat.txt',current_state)
         print(action)
 
         input("Press Any Key For Next State")
