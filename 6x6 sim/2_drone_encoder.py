@@ -1,27 +1,25 @@
 import argparse
 import numpy as np
 
+gridsize = 6
+
 def aa_hit_prob(drone_pos1,drone_pos2, aa):
     d1 = np.linalg.norm(np.array(drone_pos1) - np.array(aa))
     d2 = np.linalg.norm(np.array(drone_pos2) - np.array(aa))
     if(d1<d2):
-        return [0.5*np.e**(-d1),0]
+        return [1*np.e**(-d1),0]
     elif(d1>d2):
-        return [0,0.5*np.e**(-d2)]
-    elif(d1==d2):
-        a = np.random.choice([0,1],p=[0.5, 0.5])
-        if(a==0):
-            return [0.5*np.e**(-d1),0]
-        elif(a==1):
-            return [0,0.5*np.e**(-d2)]
+        return [0,1*np.e**(-d2)]
+    else:
+        return [0.5*np.e**(-d1),0.5*np.e**(-d2)]
 
 def drone_hit_prob(drone_pos, aa):
-    return 2*np.e**-(np.linalg.norm(np.array(drone_pos) - np.array(aa)))
+    return 1*np.e**-(np.linalg.norm(np.array(drone_pos) - np.array(aa)))
 
 def out_of_arena(drone_pos1,drone_pos2):
-    if drone_pos1[0] < 0 or drone_pos1[0] > 3 or drone_pos2[0] < 0 or drone_pos2[0] > 3:
+    if drone_pos1[0] < 0 or drone_pos1[0] > gridsize-1 or drone_pos2[0] < 0 or drone_pos2[0] > gridsize-1:
         return True
-    if drone_pos1[1] < 0 or drone_pos1[1] > 3 or drone_pos2[1] < 0 or drone_pos2[1] > 3:
+    if drone_pos1[1] < 0 or drone_pos1[1] > gridsize-1 or drone_pos2[1] < 0 or drone_pos2[1] > gridsize-1:
         return True
     return False
 
@@ -59,7 +57,7 @@ if __name__=="__main__":
     # -1 -> any drone dies
     # 0 -> both anti-airs dead
 
-    num_S = 2 + 16*16*3  #change made
+    num_S = 2 + gridsize*gridsize*gridsize*gridsize*3  #change made
     num_A = 36
     drone_death_reward = -2
     aa_kill_reward = 5
@@ -80,19 +78,19 @@ if __name__=="__main__":
 
     transitions = []
     states = [-1, 0] #change
-    for x_coord1 in range(4):
-        for y_coord1 in range(4):
-            for x_coord2 in range(4):
-                for y_coord2 in range(4):
+    for x_coord1 in range(gridsize):
+        for y_coord1 in range(gridsize):
+            for x_coord2 in range(gridsize):
+                for y_coord2 in range(gridsize):
                     states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 0, 1))
                     states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 0))
                     states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 1))
     #states=[-1,0,next 16 numbers have state val when aa2 is alive,next 16 when aa1 is alive, next 16 when both alive]
     #-1 and 0 are default states
-    for x_coord1 in range(4):
-        for y_coord1 in range(4):
-            for x_coord2 in range(4):
-                for y_coord2 in range(4):
+    for x_coord1 in range(gridsize):
+        for y_coord1 in range(gridsize):
+            for x_coord2 in range(gridsize):
+                for y_coord2 in range(gridsize):
                     drone_pos1 = (x_coord1, y_coord1)
                     drone_pos2 = (x_coord2, y_coord2)#change made
                     
@@ -103,14 +101,14 @@ if __name__=="__main__":
                             a1 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[0])
                             a2 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[1])
                             aa1_d1 = a1[0]
-                            aa2_d1 = a1[1]
-                            aa1_d2 = a2[0]
+                            aa1_d2 = a1[1]
+                            aa2_d1 = a2[0]
                             aa2_d2 = a2[1]
                             prob_drone_not_hit1 =(1-aa_statuses[0]*aa1_d1)*(1-aa_statuses[1]*aa2_d1)
                             prob_drone_not_hit2 =(1-aa_statuses[0]*aa1_d2)*(1-aa_statuses[1]*aa2_d2)
 
-                            d1_aa1 = drone_hit_prob(drone_pos2,aa_positions[0])*aa_statuses[0]*(1-action[0])
-                            d1_aa2 = drone_hit_prob(drone_pos2,aa_positions[1])*aa_statuses[1]*(action[0])
+                            d1_aa1 = drone_hit_prob(drone_pos1,aa_positions[0])*aa_statuses[0]*(1-action[0])
+                            d1_aa2 = drone_hit_prob(drone_pos1,aa_positions[1])*aa_statuses[1]*(action[0])
                             d2_aa1 = drone_hit_prob(drone_pos2,aa_positions[0])*aa_statuses[0]*(1-action[1])
                             d2_aa2 = drone_hit_prob(drone_pos2,aa_positions[1])*aa_statuses[1]*(action[1])
                             aa1_not_killed_prob = (1-d1_aa1)*(1-d2_aa1)
@@ -155,8 +153,8 @@ if __name__=="__main__":
                                 a1 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[0])
                                 a2 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[1])
                                 aa1_d1 = a1[0]
-                                aa2_d1 = a1[1]
-                                aa1_d2 = a2[0]
+                                aa1_d2 = a1[1]
+                                aa2_d1 = a2[0]
                                 aa2_d2 = a2[1]
                                 prob_drone_not_hit1 =(1-aa_statuses[0]*aa1_d1)*(1-aa_statuses[1]*aa2_d1)
                                 prob_drone_not_hit2 =(1-aa_statuses[0]*aa1_d2)*(1-aa_statuses[1]*aa2_d2)
@@ -176,8 +174,8 @@ if __name__=="__main__":
                                 aa2_not_killed_prob = (1-d1_aa2)*(1-d2_aa2)
 
                                 transitions.append(( #all miss
-                                states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
-                                states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], aa_statuses[1])), 0, prob_drone_not_hit1*prob_drone_not_hit2*aa1_not_killed_prob*aa2_not_killed_prob
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(next_pos, drone_pos2, aa_statuses[0], aa_statuses[1])), 0, prob_drone_not_hit1*prob_drone_not_hit2*aa1_not_killed_prob*aa2_not_killed_prob
                                 ))
                                 transitions.append(( #any drone dies    
                                     states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
@@ -207,15 +205,15 @@ if __name__=="__main__":
                                 if out_of_arena(drone_pos1,next_pos):
                                     transitions.append((
                                         states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])),
-                                        spit_action([move_action,action]), states.index(-1), drone_death_reward, 1
+                                        spit_action([action,move_action]), states.index(-1), drone_death_reward, 1
                                     ))
                                     continue
                                 # Remaining cases
                                 a1 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[0])
                                 a2 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[1])
                                 aa1_d1 = a1[0]
-                                aa2_d1 = a1[1]
-                                aa1_d2 = a2[0]
+                                aa1_d2 = a1[1]
+                                aa2_d1 = a2[0]
                                 aa2_d2 = a2[1]
                                 prob_drone_not_hit1 =(1-aa_statuses[0]*aa1_d1)*(1-aa_statuses[1]*aa2_d1)
                                 prob_drone_not_hit2 =(1-aa_statuses[0]*aa1_d2)*(1-aa_statuses[1]*aa2_d2)
@@ -229,29 +227,29 @@ if __name__=="__main__":
                                 else:
                                     d2_aa2 = 0
 
-                                d1_aa1 = drone_hit_prob(drone_pos2,aa_positions[0])*aa_statuses[0]*(1-action)
-                                d1_aa2 = drone_hit_prob(drone_pos2,aa_positions[1])*aa_statuses[1]*(action)
+                                d1_aa1 = drone_hit_prob(drone_pos1,aa_positions[0])*aa_statuses[0]*(1-action)
+                                d1_aa2 = drone_hit_prob(drone_pos1,aa_positions[1])*aa_statuses[1]*(action)
                                 aa1_not_killed_prob = (1-d1_aa1)*(1-d2_aa1)
                                 aa2_not_killed_prob = (1-d1_aa2)*(1-d2_aa2)
 
                                 transitions.append(( #all miss
-                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([action,move_action]),
                                     states.index(get_state_code(drone_pos1, next_pos, aa_statuses[0], aa_statuses[1])), 0, prob_drone_not_hit1*prob_drone_not_hit2*aa1_not_killed_prob*aa2_not_killed_prob
                                 ))
                                 transitions.append(( #any drone dies    
-                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([action,move_action]),
                                     states.index(-1), drone_death_reward, (1-prob_drone_not_hit1*prob_drone_not_hit2)
                                 ))
                                 transitions.append(( #a1 dies
-                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([action,move_action]),
                                     states.index(get_state_code(drone_pos1,next_pos, 0, aa_statuses[1])), aa_kill_reward, prob_drone_not_hit1*prob_drone_not_hit2*(1-aa1_not_killed_prob)*aa2_not_killed_prob
                                 ))
                                 transitions.append(( #a2 dies
-                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([action,move_action]),
                                     states.index(get_state_code(drone_pos1,next_pos, aa_statuses[0], 0)), aa_kill_reward, prob_drone_not_hit1*prob_drone_not_hit2*aa1_not_killed_prob*(1-aa2_not_killed_prob)
                                 ))
                                 transitions.append(( #both a1,a2 die
-                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action,action]),
+                                    states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([action,move_action]),
                                     states.index(get_state_code(drone_pos1,next_pos, 0, 0)), 2*aa_kill_reward, prob_drone_not_hit1*prob_drone_not_hit2*(1-aa1_not_killed_prob)*(1-aa2_not_killed_prob)
                                 ))
                     
@@ -260,7 +258,7 @@ if __name__=="__main__":
                     # d1 move d2 move
                     for aa_statuses in [(0,1), (1,0), (1,1)]:
                         for move_action1 in range(2,6,1):
-                            next_pos1 = np.array(drone_pos1) + np.array(movement_delta[move_action])
+                            next_pos1 = np.array(drone_pos1) + np.array(movement_delta[move_action1])
                                 # Negative reward for going out of bounds
                             if out_of_arena(next_pos1,drone_pos2):
                                 for move_action2 in range(2,6,1):
@@ -270,7 +268,7 @@ if __name__=="__main__":
                                     ))
                                 continue
                             for move_action2 in range(2,6,1):
-                                next_pos2 = np.array(drone_pos2) + np.array(movement_delta[move_action])
+                                next_pos2 = np.array(drone_pos2) + np.array(movement_delta[move_action2])
                                 # Negative reward for going out of bounds
                                 if out_of_arena(next_pos1,next_pos2):
                                     transitions.append((
@@ -282,8 +280,8 @@ if __name__=="__main__":
                                 a1 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[0])
                                 a2 = aa_hit_prob(drone_pos1,drone_pos2,aa_positions[1])
                                 aa1_d1 = a1[0]
-                                aa2_d1 = a1[1]
-                                aa1_d2 = a2[0]
+                                aa1_d2 = a1[1]
+                                aa2_d1 = a2[0]
                                 aa2_d2 = a2[1]
                                 prob_drone_not_hit1 =(1-aa_statuses[0]*aa1_d1)*(1-aa_statuses[1]*aa2_d1)
                                 prob_drone_not_hit2 =(1-aa_statuses[0]*aa1_d2)*(1-aa_statuses[1]*aa2_d2)
