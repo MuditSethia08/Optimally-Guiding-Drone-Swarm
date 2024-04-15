@@ -46,8 +46,9 @@ def parse_mdp(file_path):
                 mdptype = None
                 gamma = None
             elif parts[0] == 'transition':
-                R[int(parts[1]), int(parts[2]), int(parts[3])] = float(parts[4])
-                T[int(parts[1]), int(parts[2]), int(parts[3])] = float(parts[5])
+                R[int(parts[1]), int(parts[2]), int(parts[-3])] = float(parts[4])
+                T[int(parts[1]), int(parts[2]), int(parts[-3])] = float(parts[5])
+            
             elif parts[0] == 'mdptype':
                 mdptype = parts[-1]
             elif parts[0] == 'discount':

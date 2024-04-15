@@ -1,8 +1,9 @@
 import argparse
 import numpy as np
 
-gridsize = 6
-
+gridsize = 7
+num_d = 5
+num_aa = 5
 
 def aa_hit_prob(drone_pos1,drone_pos2, aa):
     d1 = np.linalg.norm(np.array(drone_pos1) - np.array(aa))
@@ -27,11 +28,17 @@ def out_of_arena(drone_pos1,drone_pos2):
 def spit_action(a):
     return 4*a[0]+a[1]
 
-def get_state_code(drone_pos1,drone_pos2, aa1_status, aa2_status):
+def get_state_code(drone_pos, aa_statuses):
     # Winning
-    if aa1_status == 0 and aa2_status == 0:
+    if np.sum(aa_statuses)==0:
         return 0
-    return 100000*drone_pos1[0] + 10000*drone_pos1[1]+1000*drone_pos2[0] + 100*drone_pos2[1] + 10*aa1_status + aa2_status
+    state_code = 0
+    for i in range(num_aa):
+        state_code += aa_statuses[i]*10**i
+    for j in range(num_d):
+        for k in range(0,2):
+            state_code += drone_pos[j,k]*10**(i+j+k)
+    return state_code #100000*drone_pos1[0] + 10000*drone_pos1[1]+1000*drone_pos2[0] + 100*drone_pos2[1] + 10*aa1_status + aa2_status
 
 def print_as_mdp(num_S, num_A, transitions):
     print("numStates", num_S)
@@ -45,7 +52,10 @@ def print_as_mdp(num_S, num_A, transitions):
 if __name__=="__main__":
     aa_positions = [
         (2,0),
-        (3,2)
+        (3,2),
+        (2,1),
+        (5,4),
+        (4,5)
     ]
     # abcd
     # a-drone x
@@ -58,7 +68,7 @@ if __name__=="__main__":
     # -1 -> any drone dies
     # 0 -> both anti-airs dead
 
-    num_S = 2 + gridsize*gridsize*gridsize*gridsize*3  #change made
+    num_S = 1 + gridsize*gridsize*gridsize*gridsize*3  #change made
     num_A = 16
     drone_death_reward = -2
     aa_kill_reward = 5
@@ -77,31 +87,35 @@ if __name__=="__main__":
         3: (1,0)
     }
 
+    drone_pos = np.zeros([num_d,2])
+    aa_statuses = np.zeros(num_aa)
     transitions = []
     states = [-1, 0] #change
-    for x_coord1 in range(gridsize):
-        for y_coord1 in range(gridsize):
-            for x_coord2 in range(gridsize):
-                for y_coord2 in range(gridsize):
-                    states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 0, 1))
-                    states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 0))
-                    states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 1))
-    
-    for x_coord1 in range(gridsize):
-        for y_coord1 in range(gridsize):
-            for x_coord2 in range(gridsize):
-                for y_coord2 in range(gridsize):
-                    drone_pos1 = (x_coord1, y_coord1)
-                    drone_pos2 = (x_coord2, y_coord2)#change made
-                    
-                    ################
-                    ## move-move ###
-                    # d1 move d2 move
-                    for aa_statuses in [(0,1), (1,0), (1,1)]:
-                        for move_action1 in range(0,4,1):
-                            next_pos1 = np.array(drone_pos1) + np.array(movement_delta[move_action1])
-                                # Negative reward for going out of bounds
-                            if out_of_arena(next_pos1,drone_pos2):
+    for i in range(num_d):
+        for x_coord in range(gridsize):
+            for y_coord in range(gridsize):
+                drone_pos[i,]=(x_coord,y_coord)
+                for aa in range(num_aa):
+                    for aa_status in range(0,2):
+                        aa_statuses[aa]=aa_status
+                        if(np.sum(aa_statuses)!=0):
+                            states.append(get_state_code(drone_pos ,aa_statuses))
+    for i in range(num_d):
+        for x_coord in range(gridsize):
+            for y_coord in range(gridsize):
+                drone_pos[i,]=(x_coord,y_coord)
+                drone_pos1 = (x_coord1, y_coord1)
+                drone_pos2 = (x_coord2, y_coord2)#change made                    
+                ################
+                ## move-move ###
+                # d1 move d2 move
+                next_pos = np.zeros(num_d)
+                for aa_status in [(0,1), (1,0), (1,1)]:
+                    for i in range(num_d):
+                        for move_action in range(0,4,1):
+                            next_pos[i] = np.array(drone_pos[i]) + np.array(movement_delta[move_action])
+                            # Negative reward for going out of bounds
+                            if out_of_arena(next_pos,drone_pos):
                                 for move_action2 in range(1,4,1):
                                     transitions.append((
                                         states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])),
