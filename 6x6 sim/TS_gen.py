@@ -34,7 +34,7 @@ def get_state_code(drone_pos, aa_status):
         state_code += aa_status[i]*10**i
     for j in range(num_d):
         for k in range(2):
-            state_code = state_code + np.dot(drone_pos[j,k],(10**(num_aa-1+j+k)))
+            state_code = state_code + drone_pos[j,1-k]*(10**(num_aa+k+2*j))
     return state_code 
 
 def print_as_mdp(num_S, num_A, transitions):
@@ -48,7 +48,7 @@ def print_as_mdp(num_S, num_A, transitions):
 
 if __name__=="__main__":
 
-    drone_death_reward = -2
+    drone_death_reward = -5
 
     aa_kill_reward = 5
 
@@ -112,7 +112,7 @@ if __name__=="__main__":
                                     continue
                         reward = np.sum(np.array(aa_status) - next_aa_status)*5
                         if(reward==0):
-                            reward = -5
+                            reward = -0.25/gridsize
                         drone_pos = np.array(drone_pos)
                         action = np.array(action)
                         transitions.append((
