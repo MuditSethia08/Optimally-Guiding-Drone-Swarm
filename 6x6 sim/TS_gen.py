@@ -4,6 +4,7 @@ import numpy as np
 gridsize = 7
 num_d = 5
 num_aa = 5
+import itertools
 
 def aa_hit_prob(drone_pos1,drone_pos2, aa):
     d1 = np.linalg.norm(np.array(drone_pos1) - np.array(aa))
@@ -28,7 +29,7 @@ def out_of_arena(drone_pos1,drone_pos2):
 def spit_action(a):
     num=0
     for i in len(a):
-        num+=a[i]*4**(len(a)-i)
+        num+=a[i]*4**(num_d-i)
     return num
 
 def get_state_code(drone_pos, aa_status):
@@ -113,6 +114,17 @@ if __name__=="__main__":
         return filter_non_zero_sum_tuples(tuples)
     
     aa_statuses=generate_tuples_with_non_zero_sum(num_aa)
+
+    def generate_particle_states(n, m):
+        coordinates = list(itertools.product(range(m), repeat=2))
+        return list(itertools.product(coordinates, repeat=n))
+
+    # Example usage
+    n = 2 # Number of particles
+    m = 6  # Size of the grid (m x m)
+    states = generate_particle_states(n, m)
+    print(len(states))
+    print(states[5])
     for i in range(num_d):
         for x_coord in range(gridsize):
             for y_coord in range(gridsize):
@@ -129,28 +141,19 @@ if __name__=="__main__":
                 ################
                 ## move-move ###
                 # d1 move d2 move
-                next_pos = np.zeros(num_d)
+                next_pos=[]
                 for aa_status in aa_statuses:
                     for i in range(num_d):
                         for move_action in range(0,4,1):
                             next_pos[i] = np.array(drone_pos[i]) + np.array(movement_delta[move_action])
                             # Negative reward for going out of bounds
-                            if out_of_arena(next_pos,drone_pos):
+                            if out_of_arena(next_pos):
                                 for move_action2 in range(1,4,1):
                                     transitions.append((
                                         states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])),
                                         spit_action([move_action1,move_action2]), states.index(-1), drone_death_reward, 1
                                     ))
                                 continue
-                            for move_action2 in range(0,4,1):
-                                next_pos2 = np.array(drone_pos2) + np.array(movement_delta[move_action2])
-                                # Negative reward for going out of bounds
-                                if out_of_arena(next_pos1,next_pos2):
-                                    transitions.append((
-                                        states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])),
-                                        spit_action([move_action1,move_action2]), states.index(-1), drone_death_reward, 1
-                                    ))
-                                    continue
                                 # Remaining cases
                                 a1 = [0,0]#aa_hit_prob(drone_pos1,drone_pos2,aa_positions[0])
                                 a2 = [0,0]#aa_hit_prob(drone_pos1,drone_pos2,aa_positions[1])

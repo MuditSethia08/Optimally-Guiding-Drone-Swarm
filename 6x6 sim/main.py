@@ -2,14 +2,14 @@
 import pygame
 import math
 from environmentTS import CombatEnvironment
-
+move_actions=4
 def parse_strat(file_path,index):
     with open(file_path, 'r') as file:
         lines = file.readlines()
         line = lines[index]
         columns = line.split()
         print(columns[1])
-    return [math.floor(int(columns[1])/4), int(columns[1])%4]
+    return [math.floor(int(columns[1])/move_actions), int(columns[1])%move_actions]
 
 def main():
     env = CombatEnvironment()
@@ -30,7 +30,7 @@ def main():
 
         input("Press Any Key For Next State")
 
-        env.step(action, 2, 2)
+        env.step(action)
         clock.tick(2)  # Control simulation speed, 2 steps per second
 
         # Add additional game logic (e.g., user input) as needed

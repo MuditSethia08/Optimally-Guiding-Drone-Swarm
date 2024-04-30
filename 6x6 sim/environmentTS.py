@@ -71,11 +71,10 @@ class CombatEnvironment:
         for entity in self.drones + self.defenses:
             if(entity.status):
                 self.grid[entity.position] = entity
-            else:
-                self.grid[entity.position] = None
+            
                 
 
-    def step(self, action, num_drones, num_defenses):
+    def step(self, action):
         """
         Set drones and defences according to the newly provided coordinates.
         """
@@ -92,15 +91,18 @@ class CombatEnvironment:
             b1 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[0])))
             b2 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[1])))
             print(b1,' b1', 'b2 ', b2)
-            if(b1==0):
-                self.defenses[0].status==0
+            if(b1<=0.01):
+                print('kill1')
+                self.defenses[0].status=0
                 num_defenses=num_defenses-1
                 
-            if(b2==0):
-                self.defenses[1].status==0
+            if(b2<=0.01):
+                print('kill2')
+                self.defenses[1].status=0
                 num_defenses=num_defenses-1
                 print('numdef ', num_defenses)
 
+        print(self.defenses[0].status,self.defenses[1].status)
         self.reset()
 
     def render(self):
