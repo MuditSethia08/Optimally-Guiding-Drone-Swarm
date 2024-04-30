@@ -95,6 +95,7 @@ if __name__=="__main__":
     aa_statuses = np.zeros(num_aa)
     transitions = []
     states = [-1, 0] #change
+    
     def generate_tuples(n):
         if n == 1:
             return [(0,), (1,)]
@@ -123,15 +124,9 @@ if __name__=="__main__":
     n = 2 # Number of particles
     m = 6  # Size of the grid (m x m)
     states = generate_particle_states(n, m)
-    print(len(states))
-    print(states[5])
-    for i in range(num_d):
-        for x_coord in range(gridsize):
-            for y_coord in range(gridsize):
-                drone_pos[i,]=(x_coord,y_coord)
-                for aa in range(num_aa):
-                    for aa_status in aa_statuses:
-                        states.append(get_state_code(drone_pos ,aa_statuses))
+    for drone_pos in states:
+        for aa_status in aa_statuses:
+            states.append(get_state_code(drone_pos ,aa_statuses))
     for i in range(num_d):
         for x_coord in range(gridsize):
             for y_coord in range(gridsize):
