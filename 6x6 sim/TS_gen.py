@@ -26,15 +26,18 @@ def out_of_arena(drone_pos1,drone_pos2):
     return False
 
 def spit_action(a):
-    return 4*a[0]+a[1]
+    num=0
+    for i in len(a):
+        num+=a[i]*4**(len(a)-i)
+    return num
 
-def get_state_code(drone_pos, aa_statuses):
+def get_state_code(drone_pos, aa_status):
     # Winning
-    if np.sum(aa_statuses)==0:
+    if np.sum(aa_status)==0:
         return 0
     state_code = 0
     for i in range(num_aa):
-        state_code += aa_statuses[i]*10**i
+        state_code += aa_status[i]*10**i
     for j in range(num_d):
         for k in range(0,2):
             state_code += drone_pos[j,k]*10**(i+j+k)
@@ -68,8 +71,8 @@ if __name__=="__main__":
     # -1 -> any drone dies
     # 0 -> both anti-airs dead
 
-    num_S = 1 + gridsize*gridsize*gridsize*gridsize*3  #change made
-    num_A = 16
+    num_S = 2 + gridsize*gridsize*gridsize*gridsize*3  #change made
+    num_A = 4**(num_d)
     drone_death_reward = -2
     aa_kill_reward = 5
     actions = {
@@ -91,15 +94,32 @@ if __name__=="__main__":
     aa_statuses = np.zeros(num_aa)
     transitions = []
     states = [-1, 0] #change
+    def generate_tuples(n):
+        if n == 1:
+            return [(0,), (1,)]
+        else:
+            tuples = generate_tuples(n - 1)
+            result = []
+            for tup in tuples:
+                result.append(tup + (0,))
+                result.append(tup + (1,))
+            return result
+
+    def filter_non_zero_sum_tuples(tuples):
+        return [tup for tup in tuples if sum(tup) != 0]
+
+    def generate_tuples_with_non_zero_sum(n):
+        tuples = generate_tuples(n)
+        return filter_non_zero_sum_tuples(tuples)
+    
+    aa_statuses=generate_tuples_with_non_zero_sum(num_aa)
     for i in range(num_d):
         for x_coord in range(gridsize):
             for y_coord in range(gridsize):
                 drone_pos[i,]=(x_coord,y_coord)
                 for aa in range(num_aa):
-                    for aa_status in range(0,2):
-                        aa_statuses[aa]=aa_status
-                        if(np.sum(aa_statuses)!=0):
-                            states.append(get_state_code(drone_pos ,aa_statuses))
+                    for aa_status in aa_statuses:
+                        states.append(get_state_code(drone_pos ,aa_statuses))
     for i in range(num_d):
         for x_coord in range(gridsize):
             for y_coord in range(gridsize):
@@ -110,7 +130,7 @@ if __name__=="__main__":
                 ## move-move ###
                 # d1 move d2 move
                 next_pos = np.zeros(num_d)
-                for aa_status in [(0,1), (1,0), (1,1)]:
+                for aa_status in aa_statuses:
                     for i in range(num_d):
                         for move_action in range(0,4,1):
                             next_pos[i] = np.array(drone_pos[i]) + np.array(movement_delta[move_action])
