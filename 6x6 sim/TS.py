@@ -151,10 +151,6 @@ if __name__=="__main__":
                                     states.index(get_state_code(drone_pos1, drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action1,move_action2]),
                                     states.index(get_state_code(next_pos1, next_pos2, aa_statuses[0], aa_statuses[1])), -0.5, prob_drone_not_hit1*prob_drone_not_hit2*aa1_not_killed_prob*aa2_not_killed_prob
                                 ))
-                                # transitions.append(( #any drone dies    
-                                #     states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action1,move_action2]),
-                                #     states.index(-1), drone_death_reward, (1-prob_drone_not_hit1*prob_drone_not_hit2)
-                                # ))
                                 transitions.append(( #a1 dies
                                     states.index(get_state_code(drone_pos1,drone_pos2, aa_statuses[0], aa_statuses[1])), spit_action([move_action1,move_action2]),
                                     states.index(get_state_code(next_pos1, next_pos2, 0, aa_statuses[1])), aa_kill_reward, prob_drone_not_hit1*prob_drone_not_hit2*(1-aa1_not_killed_prob)*aa2_not_killed_prob

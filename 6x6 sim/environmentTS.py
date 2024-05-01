@@ -5,19 +5,31 @@ import pygame
 import random
 from agent import Drone
 from defense import DefenseSystem
+import itertools 
 
 random_seed = 0
-gridsize=6
-def get_state_code(drone_pos1,drone_pos2, aa1_status, aa2_status):
-    # Winning
-    if aa1_status == 0 and aa2_status == 0:
-        return 0
-    return 100000*drone_pos1[0] + 10000*drone_pos1[1]+1000*drone_pos2[0] + 100*drone_pos2[1] + 10*aa1_status + aa2_status
-
+gridsize = 4
+num_d = 2
 aa_positions = [
         (2,0),
-        (3,2)
+        (3,2)#,
+        # (2,1),
+        # (5,4),
+        # (4,5)
     ]
+num_aa = len(aa_positions)
+
+def get_state_code(drone_pos, aa_status):
+    # Winning
+    if np.sum(aa_status)==0:
+        return 0
+    state_code = 0
+    for i in range(num_aa):
+        state_code += aa_status[i]*10**i
+    for j in range(num_d):
+        for k in range(2):
+            state_code = state_code + drone_pos[j,1-k]*(10**(num_aa+k+2*j))
+    return state_code 
 
 actions = {
         #0: "shoot first aa",
@@ -27,23 +39,36 @@ actions = {
         2: "moves down",
         3: "moves right"
     }
+
 movement_delta = {
     0: (0,-1),
     1: (-1,0),
     2: (0,1),
     3: (1,0)
 }
+
+def generate_particle_states(n, m):
+    coordinates = list(itertools.product(range(m), repeat=2))
+    return list(itertools.product(coordinates, repeat=n))
+def generate_particle_combinations(n):
+        values = [0, 1]
+        combinations = list(itertools.product(values, repeat=n))
+        # Filter out the combination where all particles have a value of 0
+        combinations = [combo for combo in combinations if sum(combo) > 0]
+        return combinations
+
+    
+aa_statuses=generate_particle_combinations(num_aa)
+poses = generate_particle_states(num_d, gridsize)
+
 states = [-1, 0] #change
-for x_coord1 in range(gridsize):
-    for y_coord1 in range(gridsize):
-        for x_coord2 in range(gridsize):
-            for y_coord2 in range(gridsize):
-                states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 0, 1))
-                states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 0))
-                states.append(get_state_code((x_coord1, y_coord1),(x_coord2, y_coord2), 1, 1))
+for drone_pos in poses:
+        for aa_status in aa_statuses:
+            pos = np.array(drone_pos)
+            states.append(get_state_code(pos ,aa_status))
 
 class CombatEnvironment:
-    def __init__(self, grid_size=(6, 6), num_drones=2, num_defenses=2, cell_size=60):
+    def __init__(self, grid_size=(gridsize, gridsize), num_drones=num_d, num_defenses=num_aa, cell_size=60):
         """
         Initialize the CombatEnvironment class.
 
@@ -71,36 +96,23 @@ class CombatEnvironment:
         for entity in self.drones + self.defenses:
             if(entity.status):
                 self.grid[entity.position] = entity
-            else:
-                self.grid[entity.position] = None
+            
                 
 
-    def step(self, action, num_drones, num_defenses):
+    def step(self, action):
         """
         Set drones and defences according to the newly provided coordinates.
         """
-        num_defenses=2
-        num_drones=2
-        a_d = np.zeros((num_defenses,2))
-        d_a = np.zeros((num_drones,2))
-
-        # for i in range(num_defenses):
-        #      a_d[i,:] = 0# self.defenses[i].aa_hit_prob(self.drones[0].position,self.drones[1].position)
-        #      #print('aa'+str(i+1)+' shoots '+'drone'+str(a_d[i,1]+1))
         for i,a in enumerate(action):
-            self.drones[i].position = tuple(t1 + t2 for t1, t2 in zip(self.drones[i].position, movement_delta[a]))
-            b1 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[0])))
-            b2 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[1])))
-            print(b1,' b1', 'b2 ', b2)
-            if(b1==0):
-                self.defenses[0].status==0
-                num_defenses=num_defenses-1
-                
-            if(b2==0):
-                self.defenses[1].status==0
-                num_defenses=num_defenses-1
-                print('numdef ', num_defenses)
+            self.drones[i].position = tuple(t1 + t2 for t1, t2 in zip(self.drones[i].position, movement_delta[int(a)]))
+            # b1 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[0])))
+            # b2 = (np.linalg.norm(np.array(self.drones[i].position) - np.array(aa_positions[1])))
+            # print(b1,' b1', 'b2 ', b2)
+            for j in range(num_aa):
+                if(np.linalg.norm(np.array(self.drones[i].position) - np.array(self.defenses[j].position))<=0.1):
+                    self.defenses[j].status=0
 
+        # print(self.defenses[0].status,self.defenses[1].status)
         self.reset()
 
     def render(self):
@@ -118,12 +130,15 @@ class CombatEnvironment:
                 elif isinstance(self.grid[j, i], DefenseSystem):
                     pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(-20, -20))  # Draw defenses
         pygame.display.flip()  # Update the display
-        if(self.drones[0].status==1 and self.drones[1].status==1):
-            state = states.index(get_state_code(self.drones[0].position,self.drones[1].position,self.defenses[0].status,self.defenses[1].status))
-            print(self.drones[0].position,self.drones[1].position,self.defenses[0].status,self.defenses[1].status)
-            print(state) 
-        else:
-            state = -1
+        
+        d_p = np.zeros((num_d,2))
+        for i in range(num_d):
+            d_p[i,0] = self.drones[i].position[0]
+            d_p[i,1] = self.drones[i].position[1]
+        aa_s = np.zeros((num_aa,1))
+        for i in range(num_aa):
+            aa_s[i] = self.defenses[i].status
+        state = states.index(get_state_code(d_p,aa_s))
         
         return state
 
