@@ -43,7 +43,6 @@ class CombatEnvironment:
         Args:
         - positions (string): "a1x, a1y, a2x, a2y, d1x, d1y, d2x, d2y".
         """
-        self.positions = positions
         positions = positions.split(',')
         for i in range(num_drones):
             self.drones[i].position = (int(positions[i * 2]), int(positions[i * 2 + 1]))
