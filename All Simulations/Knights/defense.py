@@ -1,0 +1,21 @@
+# defense.py
+import numpy as np
+
+class DefenseSystem:
+    def __init__(self, position, status):
+        self.position = position
+        self.status = status
+    
+    def aa_hit_prob(self,drone_pos1,drone_pos2):
+        d1 = np.linalg.norm(np.array(drone_pos1) - np.array(self.position))
+        d2 = np.linalg.norm(np.array(drone_pos2) - np.array(self.position))
+        if(d1<d2):
+            return [0.5*np.e**(-d1)*self.status,0]
+        elif(d1>d2):
+            return [0.5*np.e**(-d2)*self.status,1]
+        elif(d1==d2):
+            a = np.random.choice([0,1],p=[0.5, 0.5])
+            if(a==0):
+                return [0.5*np.e**(-d1)*self.status,0]
+            elif(a==1):
+                return [0.5*np.e**(-d2)*self.status,1]
