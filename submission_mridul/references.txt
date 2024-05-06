@@ -1,2 +1,0 @@
-python documentation of the used libraries
-course slides
